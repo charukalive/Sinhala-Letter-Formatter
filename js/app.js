@@ -60,8 +60,8 @@
   const btnCloseModal = document.getElementById('btnCloseModal');
   const toastContainer = document.getElementById('toastContainer');
 
-  // Application State - Default mode: Unicode -> Isi (IsiAbhaya)
-  let currentMode = 'u2isi';
+  // Default font configuration: 4u-Bindumathi default
+  let currentMode = 'u2fm'; // Default mode: Unicode -> 4u / FM fonts
   let lastRichHtml = '';
   let lastEnglishTokens = [];
 
@@ -140,15 +140,23 @@
     }, 2400);
   }
 
+  // Helper: Get user's selected active font name
+  function getSelectedFont(isLetterStudio = false) {
+    if (isLetterStudio) {
+      return selLetterFont.value || '4u-Bindumathi';
+    }
+    return fontSelect.value || '4u-Bindumathi';
+  }
+
   // Update Stats Counters
   function updateStats() {
     const inVal = inputText.value;
     const outVal = outputText.value;
 
-    inCharCount.textContent = `${inVal.length} characters`;
+    inCharCount.textContent = `${inVal.length} chars`;
     inWordCount.textContent = `${inVal.trim() ? inVal.trim().split(/\s+/).length : 0} words`;
 
-    outCharCount.textContent = `${outVal.length} characters`;
+    outCharCount.textContent = `${outVal.length} chars`;
     outWordCount.textContent = `${outVal.trim() ? outVal.trim().split(/\s+/).length : 0} words`;
 
     if (lastEnglishTokens.length > 0 && chkPreserveEnglish.checked) {
@@ -159,7 +167,7 @@
     }
   }
 
-  // Update English highlight class (when tickbox is checked)
+  // Update English highlight class
   function updateEnglishHighlight() {
     const shouldHighlight = chkHighlightEnglish.checked;
     if (shouldHighlight) {
@@ -174,6 +182,8 @@
   // Core Conversion Dispatcher
   function runConversion() {
     const val = inputText.value;
+    const activeFont = getSelectedFont(false);
+
     if (!val) {
       outputText.value = '';
       previewBox.innerHTML = 'Your rendered Sinhala text with English words will appear here in real-time.';
@@ -188,43 +198,27 @@
     let plainResult = '';
     let richHtml = '';
 
-    if (currentMode === 'u2isi') {
+    // Check if the current mode or selected font is Isi
+    const isIsi = (currentMode === 'u2isi' || activeFont === 'IsiAbhaya');
+
+    if (currentMode === 'u2fm' || currentMode === 'u2isi') {
+      const targetType = isIsi ? 'isi' : 'fm';
+      const convertFn = isIsi ? unicodeToIsi : unicodeToFM;
+
       if (preserveEnglish && window.MixedFontFormatter) {
-        const res = window.MixedFontFormatter.convertWithPreservation(val, 'isi', unicodeToIsi);
+        const res = window.MixedFontFormatter.convertWithPreservation(val, targetType, convertFn);
         plainResult = res.plainText;
         richHtml = res.richHtml;
         lastEnglishTokens = res.englishTokens;
       } else {
-        plainResult = unicodeToIsi(val);
+        plainResult = convertFn(val);
         richHtml = escapeHtml(plainResult);
         lastEnglishTokens = [];
       }
-      previewBox.style.fontFamily = fontSelect.value;
-      previewBox.innerHTML = richHtml.replace(/\n/g, '<br>');
-      previewFontLabel.textContent = 'IsiAbhaya';
 
-    } else if (currentMode === 'isi2u') {
-      plainResult = isiToUnicode(val);
-      previewBox.style.fontFamily = "'Iskoola Potha', 'Noto Sans Sinhala', sans-serif";
-      previewBox.textContent = plainResult;
-      richHtml = escapeHtml(plainResult);
-      lastEnglishTokens = [];
-      previewFontLabel.textContent = 'Iskoola Potha (Unicode)';
-
-    } else if (currentMode === 'u2fm') {
-      if (preserveEnglish && window.MixedFontFormatter) {
-        const res = window.MixedFontFormatter.convertWithPreservation(val, 'fm', unicodeToFM);
-        plainResult = res.plainText;
-        richHtml = res.richHtml;
-        lastEnglishTokens = res.englishTokens;
-      } else {
-        plainResult = unicodeToFM(val);
-        richHtml = escapeHtml(plainResult);
-        lastEnglishTokens = [];
-      }
-      previewBox.style.fontFamily = fontSelect.value;
+      previewBox.style.fontFamily = `'${activeFont}', sans-serif`;
       previewBox.innerHTML = richHtml.replace(/\n/g, '<br>');
-      previewFontLabel.textContent = 'FM-Abhaya / FM-Malithi';
+      previewFontLabel.textContent = activeFont;
 
     } else if (currentMode === 'fm2u') {
       plainResult = fmToUnicode(val);
@@ -234,11 +228,19 @@
       lastEnglishTokens = [];
       previewFontLabel.textContent = 'Iskoola Potha (Unicode)';
 
+    } else if (currentMode === 'isi2u') {
+      plainResult = isiToUnicode(val);
+      previewBox.style.fontFamily = "'Iskoola Potha', 'Noto Sans Sinhala', sans-serif";
+      previewBox.textContent = plainResult;
+      richHtml = escapeHtml(plainResult);
+      lastEnglishTokens = [];
+      previewFontLabel.textContent = 'Iskoola Potha (Unicode)';
+
     } else if (currentMode === 'singlish') {
       const unicodeResult = singlishToUnicode(val);
-      const isiResult = unicodeToIsi(unicodeResult);
       const fmResult = unicodeToFM(unicodeResult);
-      plainResult = `--- [Unicode Text] ---\n${unicodeResult}\n\n--- [Isi Font Text (IsiAbhaya)] ---\n${isiResult}\n\n--- [FM Font Text (FM-Abhaya)] ---\n${fmResult}`;
+      const isiResult = unicodeToIsi(unicodeResult);
+      plainResult = `--- [Unicode Text] ---\n${unicodeResult}\n\n--- [${activeFont} Text] ---\n${isIsi ? isiResult : fmResult}`;
       previewBox.style.fontFamily = "'Iskoola Potha', 'Noto Sans Sinhala', sans-serif";
       previewBox.textContent = unicodeResult;
       richHtml = escapeHtml(unicodeResult);
@@ -256,17 +258,18 @@
   // Update Letter Studio Layout
   function updateLetterStudio() {
     const val = inputText.value || sampleComplaintLetter;
-    const fontMode = selLetterFont.value; // 'isi', 'fm', 'unicode'
+    const fontChoice = selLetterFont.value; // '4u-Bindumathi', 'FM-Malithi', 'FM-Abhaya', 'IsiAbhaya', 'unicode'
     
     let richContent = '';
-    if (fontMode === 'unicode') {
+    if (fontChoice === 'unicode') {
       richContent = escapeHtml(val).replace(/\n/g, '<br>');
       letterBodyRendered.style.fontFamily = "'Iskoola Potha', 'Noto Sans Sinhala', sans-serif";
     } else {
-      const convertFn = fontMode === 'isi' ? unicodeToIsi : unicodeToFM;
-      const res = window.MixedFontFormatter.convertWithPreservation(val, fontMode, convertFn);
+      const isIsi = (fontChoice === 'IsiAbhaya');
+      const convertFn = isIsi ? unicodeToIsi : unicodeToFM;
+      const res = window.MixedFontFormatter.convertWithPreservation(val, isIsi ? 'isi' : 'fm', convertFn);
       richContent = res.richHtml.replace(/\n/g, '<br>');
-      letterBodyRendered.style.fontFamily = fontMode === 'isi' ? "'IsiAbhaya', 'Isi Abhaya', 'Isi', sans-serif" : "'FM-Abhaya', 'FM-Malithi', sans-serif";
+      letterBodyRendered.style.fontFamily = `'${fontChoice}', sans-serif`;
     }
 
     letterBodyRendered.innerHTML = richContent;
@@ -315,7 +318,7 @@
     }
   }
 
-  // Copy for MS Word with Dual-Font formatting (Rich HTML Clipboard)
+  // Copy for MS Word with Dual-Font formatting
   async function copyForWord() {
     if (!lastRichHtml) {
       showToast('Nothing to copy', '⚠️');
@@ -323,7 +326,7 @@
     }
 
     const plain = outputText.value;
-    const fontName = (currentMode === 'u2isi' || currentMode === 'isi2u') ? 'IsiAbhaya' : 'FM-Abhaya';
+    const fontName = getSelectedFont(false);
     const htmlToCopy = `
       <div style="font-family: '${fontName}', Arial, sans-serif; font-size: 13pt; line-height: 1.6;">
         ${lastRichHtml.replace(/\n/g, '<br>')}
@@ -338,14 +341,14 @@
         'text/plain': blobText
       });
       await navigator.clipboard.write([clipboardItem]);
-      showToast(`Copied dual-font text for Word! (${fontName} + Arial)`, '✨');
+      showToast(`Copied text for Word! (${fontName} + Arial)`, '✨');
     } catch (e) {
       copyOutput();
       showToast('Copied text (Paste directly in Word)', 'ℹ️');
     }
   }
 
-  // Download Native .DOCX File (Zero-dependency, true OpenXML Word Document)
+  // Download Native .DOCX File
   function downloadNativeDocx(includeLetterhead = false) {
     const text = inputText.value || sampleComplaintLetter;
     if (!text) {
@@ -353,25 +356,18 @@
       return;
     }
 
-    let targetFont = 'IsiAbhaya';
-    let convertFn = unicodeToIsi;
+    const selectedFont = getSelectedFont(includeLetterhead);
+    let targetFont = selectedFont;
+    let convertFn = unicodeToFM;
 
-    if (includeLetterhead) {
-      if (selLetterFont.value === 'fm') {
-        targetFont = 'FM-Abhaya';
-        convertFn = unicodeToFM;
-      } else if (selLetterFont.value === 'unicode') {
-        targetFont = 'Iskoola Potha';
-        convertFn = null;
-      }
+    if (selectedFont === 'IsiAbhaya') {
+      convertFn = unicodeToIsi;
+    } else if (selectedFont === 'unicode' || selectedFont === 'Iskoola Potha') {
+      targetFont = 'Iskoola Potha';
+      convertFn = null;
     } else {
-      if (currentMode === 'u2fm') {
-        targetFont = 'FM-Abhaya';
-        convertFn = unicodeToFM;
-      } else if (currentMode === 'fm2u' || currentMode === 'isi2u') {
-        targetFont = 'Iskoola Potha';
-        convertFn = null;
-      }
+      // 4u-Bindumathi, FM-Malithi, FM-Abhaya all use unicodeToFM
+      convertFn = unicodeToFM;
     }
 
     const options = {
@@ -390,10 +386,10 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `converted-${targetFont}-${Date.now()}.docx`;
+    a.download = `letter-${targetFont}-${Date.now()}.docx`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Downloaded native .DOCX file (${targetFont} + Arial)!`, '📥');
+    showToast(`Downloaded .DOCX with ${targetFont} + Arial!`, '📥');
   }
 
   // Export to Word Document (.DOC fallback)
@@ -404,7 +400,7 @@
       return;
     }
 
-    const fontName = (currentMode === 'u2isi' || currentMode === 'isi2u') ? 'IsiAbhaya' : 'FM-Abhaya';
+    const fontName = getSelectedFont(includeLetterhead);
     const bodyHtml = lastRichHtml ? lastRichHtml.replace(/\n/g, '<br>') : escapeHtml(text).replace(/\n/g, '<br>');
 
     let headerHtml = '';
@@ -446,7 +442,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `official-letter-${fontName}-${Date.now()}.doc`;
+    a.download = `letter-${fontName}-${Date.now()}.doc`;
     a.click();
     URL.revokeObjectURL(url);
     showToast(`Downloaded Word (.DOC) with ${fontName}!`);
@@ -455,9 +451,9 @@
   // Print Document (Direct A4 Print Layout)
   function printDocument(isLetterStudio = false) {
     const printableElement = isLetterStudio ? document.getElementById('printableA4Page') : null;
-    const fontName = (currentMode === 'u2isi' || currentMode === 'isi2u') ? 'IsiAbhaya, sans-serif' : 'FM-Abhaya, sans-serif';
+    const fontName = getSelectedFont(isLetterStudio);
     const bodyContent = isLetterStudio && printableElement ? printableElement.innerHTML : `
-      <div style="white-space: pre-wrap; font-family: ${fontName}; font-size: 13pt; line-height: 1.8;">
+      <div style="white-space: pre-wrap; font-family: '${fontName}', sans-serif; font-size: 13pt; line-height: 1.8;">
         ${lastRichHtml ? lastRichHtml.replace(/\n/g, '<br>') : escapeHtml(outputText.value)}
       </div>
     `;
@@ -469,12 +465,12 @@
           <title>Formal Letter Print</title>
           <style>
             @page { size: A4; margin: 1.5cm; }
-            body { font-family: ${fontName}; padding: 0; margin: 0; background: #fff; color: #000; }
+            body { font-family: '${fontName}', sans-serif; padding: 0; margin: 0; background: #fff; color: #000; }
             .en-text { font-family: Arial, Helvetica, sans-serif !important; font-weight: normal; }
             .letter-header-banner { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 25px; }
             .letter-logo-title { font-family: Arial, sans-serif; font-size: 16pt; font-weight: bold; }
             .letter-logo-subtitle { font-family: Arial, sans-serif; font-size: 9pt; color: #555; }
-            .letter-body-content { font-size: 13pt; line-height: 1.7; font-family: ${fontName}; }
+            .letter-body-content { font-size: 13pt; line-height: 1.7; font-family: '${fontName}', sans-serif; }
             .letter-footer-banner { border-top: 2px solid #999; margin-top: 40px; padding-top: 10px; font-family: Arial, sans-serif; font-size: 9pt; display: flex; justify-content: space-between; }
           </style>
         </head>
@@ -501,35 +497,32 @@
       else btn.classList.remove('active');
     });
 
-    if (mode === 'u2isi') {
+    if (mode === 'u2fm') {
+      inputLabel.textContent = 'Unicode Text';
+      const font = getSelectedFont(false);
+      outputLabel.textContent = `${font} Text`;
+      inputText.placeholder = 'Paste or type Sinhala Unicode text with English words (e.g. LF-6345, TATA ACE)...';
+      previewFontLabel.textContent = font;
+    } else if (mode === 'fm2u') {
+      inputLabel.textContent = '4u / FM Text';
+      outputLabel.textContent = 'Sinhala Unicode Text';
+      inputText.placeholder = 'Paste 4u / FM font text (e.g. Y%S ,xld)...';
+      previewFontLabel.textContent = 'Iskoola Potha (Unicode)';
+    } else if (mode === 'u2isi') {
       inputLabel.textContent = 'Unicode Text';
       outputLabel.textContent = 'IsiAbhaya Text';
-      inputText.placeholder = 'Paste or type Sinhala Unicode text with English words (e.g. LF-6345, TATA ACE)...';
-      fontSelect.value = "'IsiAbhaya', 'Isi Abhaya', 'Isi', sans-serif";
+      inputText.placeholder = 'Paste or type Sinhala Unicode text with English words...';
+      fontSelect.value = 'IsiAbhaya';
       previewFontLabel.textContent = 'IsiAbhaya';
     } else if (mode === 'isi2u') {
-      inputLabel.textContent = 'IsiAbhaya Text';
+      inputLabel.textContent = 'Isi Font Text';
       outputLabel.textContent = 'Sinhala Unicode Text';
-      inputText.placeholder = 'Paste IsiAbhaya font text (e.g. |±š z¹Y£)...';
-      fontSelect.value = "'Iskoola Potha', 'Noto Sans Sinhala', sans-serif";
-      previewFontLabel.textContent = 'Iskoola Potha (Unicode)';
-    } else if (mode === 'u2fm') {
-      inputLabel.textContent = 'Unicode Text';
-      outputLabel.textContent = 'FM-Abhaya / FM-Malithi Text';
-      inputText.placeholder = 'Paste or type Sinhala Unicode text with English words...';
-      fontSelect.value = "'FM-Abhaya', 'FMAbhaya', sans-serif";
-      previewFontLabel.textContent = 'FM-Abhaya';
-    } else if (mode === 'fm2u') {
-      inputLabel.textContent = 'FM Font Text';
-      outputLabel.textContent = 'Sinhala Unicode Text';
-      inputText.placeholder = 'Paste FM font text (e.g. Y%S ,xld)...';
-      fontSelect.value = "'Iskoola Potha', 'Noto Sans Sinhala', sans-serif";
+      inputText.placeholder = 'Paste Isi font text (e.g. |±š z¹Y£)...';
       previewFontLabel.textContent = 'Iskoola Potha (Unicode)';
     } else if (mode === 'singlish') {
       inputLabel.textContent = 'Singlish (Phonetic)';
-      outputLabel.textContent = 'IsiAbhaya, FM & Unicode Output';
+      outputLabel.textContent = 'Selected Font & Unicode Output';
       inputText.placeholder = 'Type English phonetic Sinhala (e.g. shree lankaa, mama gedhara yanawa)...';
-      fontSelect.value = "'Iskoola Potha', 'Noto Sans Sinhala', sans-serif";
       previewFontLabel.textContent = 'Iskoola Potha (Unicode)';
     }
 
@@ -564,7 +557,17 @@
 
   btnSwapMode.addEventListener('click', () => {
     const prevOut = outputText.value;
-    if (currentMode === 'u2isi') {
+    if (currentMode === 'u2fm') {
+      setMode('fm2u');
+      inputText.value = prevOut;
+      runConversion();
+      showToast('Swapped: 4u/FM ➔ Unicode');
+    } else if (currentMode === 'fm2u') {
+      setMode('u2fm');
+      inputText.value = prevOut;
+      runConversion();
+      showToast('Swapped: Unicode ➔ 4u/FM');
+    } else if (currentMode === 'u2isi') {
       setMode('isi2u');
       inputText.value = prevOut;
       runConversion();
@@ -574,16 +577,6 @@
       inputText.value = prevOut;
       runConversion();
       showToast('Swapped: Unicode ➔ Isi');
-    } else if (currentMode === 'u2fm') {
-      setMode('fm2u');
-      inputText.value = prevOut;
-      runConversion();
-      showToast('Swapped: FM ➔ Unicode');
-    } else if (currentMode === 'fm2u') {
-      setMode('u2fm');
-      inputText.value = prevOut;
-      runConversion();
-      showToast('Swapped: Unicode ➔ FM');
     }
   });
 
@@ -611,9 +604,9 @@
 
   btnLoadComplaint.addEventListener('click', () => {
     inputText.value = sampleComplaintLetter;
-    setMode('u2isi');
+    setMode('u2fm');
     runConversion();
-    showToast('Loaded AWC complaint letter with IsiAbhaya & English terms!');
+    showToast('Loaded AWC complaint letter with English terms!');
   });
 
   // DOCX & DOC exports
@@ -626,7 +619,15 @@
   btnLetterPrint.addEventListener('click', () => printDocument(true));
 
   fontSelect.addEventListener('change', () => {
-    previewBox.style.fontFamily = fontSelect.value;
+    const chosen = fontSelect.value;
+    previewFontLabel.textContent = chosen;
+    if (currentMode === 'u2fm') {
+      outputLabel.textContent = `${chosen} Text`;
+    }
+    // Sync with letter studio
+    selLetterFont.value = chosen;
+    localStorage.setItem('sinhala_selected_font', chosen);
+    runConversion();
   });
 
   fontSizeRange.addEventListener('input', () => {
@@ -638,7 +639,12 @@
   viewBtnLetter.addEventListener('click', () => setView('letter'));
 
   selLetterhead.addEventListener('change', updateLetterheadDesign);
-  selLetterFont.addEventListener('change', updateLetterStudio);
+  selLetterFont.addEventListener('change', () => {
+    const chosen = selLetterFont.value;
+    fontSelect.value = chosen;
+    localStorage.setItem('sinhala_selected_font', chosen);
+    updateLetterStudio();
+  });
 
   btnThemeToggle.addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme');
@@ -669,7 +675,14 @@
   // Init
   const savedTheme = localStorage.getItem('sinhala_font_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
-  setMode('u2isi'); // Default to Isi (IsiAbhaya)
+
+  // Set default font to 4u-Bindumathi
+  const savedFont = localStorage.getItem('sinhala_selected_font') || '4u-Bindumathi';
+  fontSelect.value = savedFont;
+  selLetterFont.value = savedFont;
+  previewFontLabel.textContent = savedFont;
+
+  setMode('u2fm'); // Default mode: Unicode -> 4u / FM
   updateLetterheadDesign();
 
   // Load sample on start
