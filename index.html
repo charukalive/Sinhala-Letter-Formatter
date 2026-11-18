@@ -2,11 +2,16 @@
 <html lang="si" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Sinhala Font & Letter Studio (IsiAbhaya • FM • Unicode)</title>
-  <meta name="description" content="Sinhala Unicode to IsiAbhaya & FM font converter with crisp English preservation, native .DOCX export, and formal letterhead formatter.">
+  <meta name="description" content="Sinhala Unicode to IsiAbhaya & FM font converter with crisp English preservation, native .DOCX export, and mobile-friendly formal letterhead formatter.">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sinhala Studio">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -17,11 +22,11 @@
       <div class="brand">
         <div class="brand-icon">සි</div>
         <div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span class="brand-title">Sinhala Font & Letter Studio</span>
-            <span class="brand-badge">ISIABHAYA • FM • UNICODE</span>
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+            <span class="brand-title">Sinhala Font Studio</span>
+            <span class="brand-badge">ISIABHAYA • FM</span>
           </div>
-          <div style="font-size: 0.72rem; color: var(--text-secondary);">IsiAbhaya • FM Fonts • Crisp English Preservation • Native .DOCX</div>
+          <div class="brand-subtitle">IsiAbhaya • FM Fonts • English Preservation</div>
         </div>
       </div>
       <div class="header-actions">
@@ -51,16 +56,14 @@
 
       <!-- Toggles Group -->
       <div class="toggles-group">
-        <!-- English Preservation Toggle (Checked by default) -->
         <label class="toggle-item" title="Automatically detect English terms (e.g. LF-6345, TATA ACE) and preserve them in Arial font for Word/Print">
           <input type="checkbox" id="chkPreserveEnglish" checked>
           <span>🛡️ Preserve English in Arial</span>
         </label>
 
-        <!-- Highlight English Toggle (Unchecked by default: English is crisp & normal) -->
         <label class="toggle-item" title="Tick this if you want to visually highlight detected English terms in subtle blue">
           <input type="checkbox" id="chkHighlightEnglish">
-          <span>🎨 Highlight English in Blue</span>
+          <span>🎨 Highlight English</span>
         </label>
       </div>
     </div>
@@ -73,10 +76,10 @@
       <div class="mode-bar">
         <div class="mode-tabs">
           <button class="tab-btn" data-mode="u2fm">
-            <span>Unicode ➔ FM Font</span>
+            <span>Unicode ➔ FM</span>
           </button>
           <button class="tab-btn" data-mode="fm2u">
-            <span>FM Font ➔ Unicode</span>
+            <span>FM ➔ Unicode</span>
           </button>
           <button class="tab-btn active" data-mode="u2isi">
             <span>Unicode ➔ Isi (IsiAbhaya)</span>
@@ -105,7 +108,7 @@
               <span class="panel-tag" id="inputTag">Input</span>
             </div>
             <div class="panel-actions">
-              <button class="btn-tool" id="btnLoadComplaint" title="Load sample complaint letter with English terms (LF-6345, TATA ACE, AWC...)">Sample Letter</button>
+              <button class="btn-tool" id="btnLoadComplaint" title="Load sample complaint letter with English terms (LF-6345, TATA ACE, AWC...)">Sample</button>
               <button class="btn-tool" id="btnPaste" title="Paste from clipboard">Paste</button>
               <button class="btn-tool" id="btnClear" title="Clear text area">Clear</button>
             </div>
@@ -115,10 +118,10 @@
           </div>
           <div class="panel-footer">
             <div class="stats-group">
-              <span id="inCharCount">0 characters</span>
+              <span id="inCharCount">0 chars</span>
               <span id="inWordCount">0 words</span>
             </div>
-            <span style="font-size: 0.7rem; color: var(--text-muted);">Real-time processing</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Real-time</span>
           </div>
         </section>
 
@@ -134,7 +137,7 @@
                 📋 Copy
               </button>
               <button class="btn-tool btn-accent" id="btnCopyWord" title="Copy dual-formatted text for MS Word (Sinhala in IsiAbhaya/FM + English in Arial)">
-                📝 Copy for Word
+                📝 For Word
               </button>
               <button class="btn-tool btn-primary-action" id="btnExportDocx" title="Download native .DOCX file with IsiAbhaya/FM for Sinhala and Arial for English">
                 📥 .DOCX
@@ -152,7 +155,7 @@
           </div>
           <div class="panel-footer">
             <div class="stats-group">
-              <span id="outCharCount">0 characters</span>
+              <span id="outCharCount">0 chars</span>
               <span id="outWordCount">0 words</span>
             </div>
             <div id="enDetectedBadge" class="english-badge-indicator" style="display: none;">
@@ -167,12 +170,12 @@
       <section class="preview-card">
         <div class="preview-header">
           <div class="preview-title">
-            <span>👁️ Dual-Font Visual Preview (<span id="previewFontLabel">IsiAbhaya</span> + English in Arial)</span>
+            <span>👁️ Dual-Font Preview (<span id="previewFontLabel">IsiAbhaya</span> + Arial)</span>
             <span class="panel-tag">WYSIWYG</span>
           </div>
           <div class="preview-controls">
             <div class="control-item">
-              <label for="fontSelect">Preview Sinhala Font:</label>
+              <label for="fontSelect">Sinhala Font:</label>
               <select id="fontSelect" class="control-select">
                 <option value="'IsiAbhaya', 'Isi Abhaya', 'Isi', sans-serif" selected>IsiAbhaya (Default for Isi)</option>
                 <option value="'FM-Abhaya', 'FMAbhaya', sans-serif">FM-Abhaya</option>
@@ -184,7 +187,7 @@
             </div>
             <div class="control-item">
               <label for="fontSizeRange">Size:</label>
-              <input type="range" id="fontSizeRange" min="14" max="42" value="18" style="cursor: pointer;">
+              <input type="range" id="fontSizeRange" min="14" max="36" value="18" style="cursor: pointer;">
               <span id="fontSizeVal">18px</span>
             </div>
           </div>
@@ -203,7 +206,7 @@
       <div class="letterhead-toolbar">
         <div class="letterhead-options">
           <div class="control-item">
-            <label for="selLetterhead">Letterhead Design:</label>
+            <label for="selLetterhead">Letterhead:</label>
             <select id="selLetterhead" class="control-select">
               <option value="awc">Animal Welfare Coalition (AWC)</option>
               <option value="classic">Classic Government / Corporate</option>
@@ -211,7 +214,7 @@
             </select>
           </div>
           <div class="control-item">
-            <label for="selLetterFont">Letter Font:</label>
+            <label for="selLetterFont">Font:</label>
             <select id="selLetterFont" class="control-select">
               <option value="isi" selected>IsiAbhaya (+ Arial for English)</option>
               <option value="fm">FM-Abhaya / FM-Malithi (+ Arial for English)</option>
@@ -222,10 +225,10 @@
 
         <div class="panel-actions">
           <button class="btn-tool btn-primary-action" id="btnLetterPrint">
-            🖨️ Print / Save PDF
+            🖨️ Print / PDF
           </button>
           <button class="btn-tool btn-accent" id="btnLetterDocx">
-            📥 Download .DOCX (IsiAbhaya + Arial)
+            📥 Download .DOCX
           </button>
           <button class="btn-tool" id="btnLetterDoc">
             .DOC
@@ -350,7 +353,7 @@
 
   <!-- Footer -->
   <footer class="app-footer">
-    <div>Sinhala Font & Letter Studio • IsiAbhaya • FM Fonts • Crisp English Preservation • 100% Offline</div>
+    <div>Sinhala Font & Letter Studio • IsiAbhaya • FM Fonts • Crisp English Preservation • 100% Mobile Ready & Offline</div>
   </footer>
 
   <!-- Scripts -->
