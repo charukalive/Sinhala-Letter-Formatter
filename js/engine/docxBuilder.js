@@ -184,7 +184,7 @@
 
     // Process lines
     const lines = (rawText || '').split(/\r?\n/);
-    const latinTokenRegex = /([A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*(?:\s+[A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*)*)/g;
+    const latinTokenRegex = /([A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*(?:\s+[-–—]\s+[A-Za-z0-9/&._-]+|\s+[A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*)*|[*•▪●○■◆◇►▸@#$%^&+=<>~_|\\\[\]{}]+)/g;
 
     for (const line of lines) {
       if (!line.trim()) {

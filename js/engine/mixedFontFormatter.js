@@ -1,12 +1,12 @@
 // Mixed Font Preservation & Dual-Font Formatter Engine
-// Preserves English words, acronyms, and codes within Sinhala Unicode documents
+// Preserves English words, acronyms, and symbols (such as * mark, bullets, etc.) within Sinhala documents
 
 (function(exports) {
   'use strict';
 
-  // Tokenizer regex: matches English words, numbers, codes, or phrases with Latin characters
-  // e.g. LF-6345, TATA ACE, Reverse Engineering, DMT, AWC, 2(1)(a)
-  const LATIN_TOKEN_REGEX = /([A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*(?:\s+[A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*)*)/g;
+  // Tokenizer regex: matches English words, numbers, codes, or phrases with Latin characters,
+  // as well as symbols and bullet marks: * • ▪ ● ○ ■ ◆ ◇ ► ▸ @ # $ % ^ & + = < > ~ _ | \ [ ] { }
+  const LATIN_OR_SYMBOL_REGEX = /([A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*(?:\s+[-–—]\s+[A-Za-z0-9/&._-]+|\s+[A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*)*|[*•▪●○■◆◇►▸@#$%^&+=<>~_|\\\[\]{}]+)/g;
 
   function tokenizeText(text) {
     if (!text) return [];
@@ -14,8 +14,8 @@
     let lastIdx = 0;
     let match;
 
-    LATIN_TOKEN_REGEX.lastIndex = 0;
-    while ((match = LATIN_TOKEN_REGEX.exec(text)) !== null) {
+    LATIN_OR_SYMBOL_REGEX.lastIndex = 0;
+    while ((match = LATIN_OR_SYMBOL_REGEX.exec(text)) !== null) {
       if (match.index > lastIdx) {
         parts.push({
           type: 'sinhala',
@@ -41,7 +41,7 @@
     if (!text) return { plainText: '', richHtml: '', englishTokens: [] };
 
     const parts = tokenizeText(text);
-    const fontName = targetType === 'isi' ? 'Isi, Isi-Potha, sans-serif' : 'FM-Malithi, FMMalithi, sans-serif';
+    const fontName = targetType === 'isi' ? 'IsiAbhaya, Isi, sans-serif' : '4u-Bindumathi, FM-Malithi, FM-Abhaya, sans-serif';
     const enFontName = 'Arial, Helvetica, sans-serif';
 
     let plainText = '';
@@ -76,5 +76,6 @@
 
   exports.tokenizeText = tokenizeText;
   exports.convertWithPreservation = convertWithPreservation;
+  exports.LATIN_OR_SYMBOL_REGEX = LATIN_OR_SYMBOL_REGEX;
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.MixedFontFormatter = {}));
