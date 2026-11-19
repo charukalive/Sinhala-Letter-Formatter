@@ -327,9 +327,14 @@
 
     const plain = outputText.value;
     const fontName = getSelectedFont(false);
+    const lines = lastRichHtml.split(/\r?\n|<br\s*\/?>/i);
+    const paragraphsHtml = lines.map(line => {
+      return `<p class="MsoNormal" style="margin: 0pt; margin-top: 0pt; margin-bottom: 0pt; line-height: 1.15; font-family: '${fontName}', Arial, sans-serif; font-size: 12pt;">${line || '&nbsp;'}</p>`;
+    }).join('\n');
+
     const htmlToCopy = `
-      <div style="font-family: '${fontName}', Arial, sans-serif; font-size: 13pt; line-height: 1.6;">
-        ${lastRichHtml.replace(/\n/g, '<br>')}
+      <div style="font-family: '${fontName}', Arial, sans-serif; font-size: 12pt; line-height: 1.15; margin: 0; padding: 0;">
+        ${paragraphsHtml}
       </div>
     `;
 
@@ -341,7 +346,7 @@
         'text/plain': blobText
       });
       await navigator.clipboard.write([clipboardItem]);
-      showToast(`Copied text for Word! (${fontName} + Arial)`, '✨');
+      showToast(`Copied text for Word! (${fontName} + Arial, 12pt)`, '✨');
     } catch (e) {
       copyOutput();
       showToast('Copied text (Paste directly in Word)', 'ℹ️');
@@ -373,7 +378,8 @@
     const options = {
       targetFont,
       preserveEnglish: chkPreserveEnglish.checked,
-      convertSinhalaFn: convertFn
+      convertSinhalaFn: convertFn,
+      fontSizePt: 12
     };
 
     if (includeLetterhead && selLetterhead.value !== 'none') {
@@ -389,7 +395,7 @@
     a.download = `letter-${targetFont}-${Date.now()}.docx`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Downloaded .DOCX with ${targetFont} + Arial!`, '📥');
+    showToast(`Downloaded .DOCX (12pt, No space after) with ${targetFont}!`, '📥');
   }
 
   // Export to Word Document (.DOC fallback)
@@ -401,20 +407,24 @@
     }
 
     const fontName = getSelectedFont(includeLetterhead);
-    const bodyHtml = lastRichHtml ? lastRichHtml.replace(/\n/g, '<br>') : escapeHtml(text).replace(/\n/g, '<br>');
+    const sourceHtml = lastRichHtml || escapeHtml(text);
+    const lines = sourceHtml.split(/\r?\n|<br\s*\/?>/i);
+    const paragraphsHtml = lines.map(line => {
+      return `<p class="MsoNormal" style="margin: 0pt; margin-top: 0pt; margin-bottom: 0pt; line-height: 1.15; font-size: 12pt;">${line || '&nbsp;'}</p>`;
+    }).join('\n');
 
     let headerHtml = '';
     let footerHtml = '';
 
     if (includeLetterhead && selLetterhead.value !== 'none') {
       headerHtml = `
-        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px;">
-          <h2 style="font-family: Arial, sans-serif; color: #0f172a; margin: 0; font-size: 18pt;">${letterHeadTitle.textContent}</h2>
+        <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+          <h2 style="font-family: Arial, sans-serif; color: #0f172a; margin: 0; font-size: 16pt;">${letterHeadTitle.textContent}</h2>
           <p style="font-family: Arial, sans-serif; color: #475569; margin: 4px 0 0 0; font-size: 10pt; letter-spacing: 1px;">${letterHeadSub.textContent}</p>
         </div>
       `;
       footerHtml = `
-        <div style="border-top: 2px solid #f59e0b; padding-top: 10px; margin-top: 40px; font-family: Arial, sans-serif; font-size: 9pt; color: #475569; text-align: center;">
+        <div style="border-top: 2px solid #f59e0b; padding-top: 10px; margin-top: 30px; font-family: Arial, sans-serif; font-size: 9pt; color: #475569; text-align: center;">
           <span>📧 ${footEmail.textContent}</span> &nbsp;|&nbsp; <span>📞 ${footPhone.textContent}</span> &nbsp;|&nbsp; <span>📍 ${footAddress.textContent}</span>
         </div>
       `;
@@ -423,17 +433,60 @@
     const htmlDocument = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head><meta charset='utf-8'><title>Formal Letter</title>
+      <!--[if gte mso 9]>
+      <xml>
+      <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+      </w:WordDocument>
+      </xml>
+      <![endif]-->
       <style>
-        @page { size: A4; margin: 2.5cm 2.5cm 2.5cm 2.5cm; }
-        body { font-family: '${fontName}', Arial, sans-serif; font-size: 13pt; line-height: 1.7; color: #0f172a; }
-        .en-text { font-family: Arial, Helvetica, sans-serif !important; font-weight: normal; }
-        .si-text { font-family: '${fontName}', sans-serif; }
+        @page { size: A4; margin: 2.5cm 2.5cm 2.5cm 2.5cm; mso-header-margin: 36pt; mso-footer-margin: 36pt; }
+        body {
+          font-family: '${fontName}', Arial, sans-serif;
+          font-size: 12pt;
+          line-height: 1.15;
+          color: #0f172a;
+          margin: 0;
+          padding: 0;
+        }
+        p, div, li {
+          margin: 0pt;
+          margin-top: 0pt;
+          margin-bottom: 0pt;
+          padding: 0pt;
+          line-height: 1.15;
+          mso-line-height-rule: exactly;
+          mso-para-margin-top: 0pt;
+          mso-para-margin-bottom: 0pt;
+          mso-para-margin-left: 0pt;
+          mso-para-margin-right: 0pt;
+        }
+        p.MsoNormal, li.MsoNormal, div.MsoNormal {
+          mso-style-parent: "";
+          margin: 0pt;
+          margin-top: 0pt;
+          margin-bottom: 0pt;
+          margin-left: 0pt;
+          margin-right: 0pt;
+          mso-para-margin: 0pt;
+          mso-pagination: widow-orphan;
+          font-size: 12.0pt;
+          font-family: "${fontName}", Arial, sans-serif;
+          line-height: 1.15;
+        }
+        .en-text { font-family: Arial, Helvetica, sans-serif !important; font-size: 12pt; font-weight: normal; }
+        .si-text { font-family: '${fontName}', sans-serif; font-size: 12pt; }
       </style>
       </head>
       <body>
-        ${headerHtml}
-        <div style="white-space: pre-wrap; font-family: '${fontName}', Arial, sans-serif;">${bodyHtml}</div>
-        ${footerHtml}
+        <div class="Section1">
+          ${headerHtml}
+          ${paragraphsHtml}
+          ${footerHtml}
+        </div>
       </body>
       </html>
     `;
@@ -445,7 +498,7 @@
     a.download = `letter-${fontName}-${Date.now()}.doc`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Downloaded Word (.DOC) with ${fontName}!`);
+    showToast(`Downloaded Word (.DOC, 12pt, No space after) with ${fontName}!`);
   }
 
   // Print Document (Direct A4 Print Layout)

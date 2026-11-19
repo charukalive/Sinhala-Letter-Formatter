@@ -120,13 +120,16 @@
   // Build complete .docx document from text with dual-font preservation
   function buildDocx(rawText, options = {}) {
     const {
-      targetFont = 'IsiAbhaya',
+      targetFont = '4u-Bindumathi',
       preserveEnglish = true,
       headerTitle = '',
       headerSub = '',
       footerContact = '',
-      convertSinhalaFn = null
+      convertSinhalaFn = null,
+      fontSizePt = 12
     } = options;
+
+    const szVal = Math.round((fontSizePt || 12) * 2); // 12pt = 24 half-points
 
     const zip = new SimpleZip();
 
@@ -154,10 +157,28 @@
     <w:rPrDefault>
       <w:rPr>
         <w:rFonts w:ascii="${escapeXml(targetFont)}" w:hAnsi="${escapeXml(targetFont)}" w:cs="${escapeXml(targetFont)}"/>
-        <w:sz w:val="26"/>
+        <w:sz w:val="${szVal}"/>
+        <w:szCs w:val="${szVal}"/>
       </w:rPr>
     </w:rPrDefault>
+    <w:pPrDefault>
+      <w:pPr>
+        <w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/>
+      </w:pPr>
+    </w:pPrDefault>
   </w:docDefaults>
+  <w:style w:type="paragraph" w:default="1" w:styleId="Normal">
+    <w:name w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr>
+      <w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/>
+    </w:pPr>
+    <w:rPr>
+      <w:rFonts w:ascii="${escapeXml(targetFont)}" w:hAnsi="${escapeXml(targetFont)}" w:cs="${escapeXml(targetFont)}"/>
+      <w:sz w:val="${szVal}"/>
+      <w:szCs w:val="${szVal}"/>
+    </w:rPr>
+  </w:style>
 </w:styles>`);
 
     let bodyXml = '';
@@ -165,7 +186,7 @@
     // Optional letterhead in DOCX
     if (headerTitle) {
       bodyXml += `<w:p>
-        <w:pPr><w:jc w:val="center"/><w:spacing w:after="60"/></w:pPr>
+        <w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="60"/></w:pPr>
         <w:r>
           <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="34"/><w:color w:val="0F172A"/></w:rPr>
           <w:t>${escapeXml(headerTitle)}</w:t>
@@ -173,7 +194,7 @@
       </w:p>`;
       if (headerSub) {
         bodyXml += `<w:p>
-          <w:pPr><w:jc w:val="center"/><w:spacing w:after="240"/><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="8" w:color="0F172A"/></w:pBdr></w:pPr>
+          <w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="160"/><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="8" w:color="0F172A"/></w:pBdr></w:pPr>
           <w:r>
             <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="18"/><w:color w:val="475569"/></w:rPr>
             <w:t>${escapeXml(headerSub)}</w:t>
@@ -187,12 +208,13 @@
     const latinTokenRegex = /([A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*(?:\s+[-–—]\s+[A-Za-z0-9/&._-]+|\s+[A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*)*|[*•▪●○■◆◇►▸@#$%^&+=<>~_|\\\[\]{}]+)/g;
 
     for (const line of lines) {
+      // Space after paragraph removed: w:before="0" w:after="0"
       if (!line.trim()) {
-        bodyXml += '<w:p><w:pPr><w:spacing w:line="320" w:after="100"/></w:pPr></w:p>';
+        bodyXml += '<w:p><w:pPr><w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/></w:pPr></w:p>';
         continue;
       }
 
-      bodyXml += '<w:p><w:pPr><w:spacing w:line="340" w:lineRule="auto" w:after="120"/></w:pPr>';
+      bodyXml += '<w:p><w:pPr><w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/></w:pPr>';
 
       if (preserveEnglish) {
         let lastIdx = 0;
@@ -203,22 +225,22 @@
           if (match.index > lastIdx) {
             const sinhalaPart = line.substring(lastIdx, match.index);
             const converted = convertSinhalaFn ? convertSinhalaFn(sinhalaPart) : sinhalaPart;
-            bodyXml += `<w:r><w:rPr><w:rFonts w:ascii="${escapeXml(targetFont)}" w:hAnsi="${escapeXml(targetFont)}" w:cs="${escapeXml(targetFont)}"/><w:sz w:val="26"/></w:rPr><w:t xml:space="preserve">${escapeXml(converted)}</w:t></w:r>`;
+            bodyXml += `<w:r><w:rPr><w:rFonts w:ascii="${escapeXml(targetFont)}" w:hAnsi="${escapeXml(targetFont)}" w:cs="${escapeXml(targetFont)}"/><w:sz w:val="${szVal}"/><w:szCs w:val="${szVal}"/></w:rPr><w:t xml:space="preserve">${escapeXml(converted)}</w:t></w:r>`;
           }
 
           const englishPart = match[0];
-          bodyXml += `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="26"/></w:rPr><w:t xml:space="preserve">${escapeXml(englishPart)}</w:t></w:r>`;
+          bodyXml += `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="${szVal}"/><w:szCs w:val="${szVal}"/></w:rPr><w:t xml:space="preserve">${escapeXml(englishPart)}</w:t></w:r>`;
           lastIdx = match.index + match[0].length;
         }
 
         if (lastIdx < line.length) {
           const sinhalaPart = line.substring(lastIdx);
           const converted = convertSinhalaFn ? convertSinhalaFn(sinhalaPart) : sinhalaPart;
-          bodyXml += `<w:r><w:rPr><w:rFonts w:ascii="${escapeXml(targetFont)}" w:hAnsi="${escapeXml(targetFont)}" w:cs="${escapeXml(targetFont)}"/><w:sz w:val="26"/></w:rPr><w:t xml:space="preserve">${escapeXml(converted)}</w:t></w:r>`;
+          bodyXml += `<w:r><w:rPr><w:rFonts w:ascii="${escapeXml(targetFont)}" w:hAnsi="${escapeXml(targetFont)}" w:cs="${escapeXml(targetFont)}"/><w:sz w:val="${szVal}"/><w:szCs w:val="${szVal}"/></w:rPr><w:t xml:space="preserve">${escapeXml(converted)}</w:t></w:r>`;
         }
       } else {
         const converted = convertSinhalaFn ? convertSinhalaFn(line) : line;
-        bodyXml += `<w:r><w:rPr><w:rFonts w:ascii="${escapeXml(targetFont)}" w:hAnsi="${escapeXml(targetFont)}" w:cs="${escapeXml(targetFont)}"/><w:sz w:val="26"/></w:rPr><w:t xml:space="preserve">${escapeXml(converted)}</w:t></w:r>`;
+        bodyXml += `<w:r><w:rPr><w:rFonts w:ascii="${escapeXml(targetFont)}" w:hAnsi="${escapeXml(targetFont)}" w:cs="${escapeXml(targetFont)}"/><w:sz w:val="${szVal}"/><w:szCs w:val="${szVal}"/></w:rPr><w:t xml:space="preserve">${escapeXml(converted)}</w:t></w:r>`;
       }
 
       bodyXml += '</w:p>';
@@ -226,7 +248,7 @@
 
     if (footerContact) {
       bodyXml += `<w:p>
-        <w:pPr><w:jc w:val="center"/><w:spacing w:before="360"/><w:pBdr><w:top w:val="single" w:sz="6" w:space="8" w:color="F59E0B"/></w:pBdr></w:pPr>
+        <w:pPr><w:jc w:val="center"/><w:spacing w:before="240" w:after="0"/><w:pBdr><w:top w:val="single" w:sz="6" w:space="8" w:color="F59E0B"/></w:pBdr></w:pPr>
         <w:r>
           <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="18"/><w:color w:val="64748B"/></w:rPr>
           <w:t>${escapeXml(footerContact)}</w:t>
