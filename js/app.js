@@ -329,11 +329,11 @@
     const fontName = getSelectedFont(false);
     const lines = lastRichHtml.split(/\r?\n|<br\s*\/?>/i);
     const paragraphsHtml = lines.map(line => {
-      return `<p class="MsoNormal" style="margin: 0pt; margin-top: 0pt; margin-bottom: 0pt; line-height: 1.15; font-family: '${fontName}', Arial, sans-serif; font-size: 12pt;">${line || '&nbsp;'}</p>`;
+      return `<p class="MsoNormal" style="margin: 0pt; margin-top: 0pt; margin-bottom: 0pt; line-height: 1.15; font-family: '${fontName}', Arial, sans-serif; font-size: 12pt; text-align: justify; text-justify: inter-word;">${line || '&nbsp;'}</p>`;
     }).join('\n');
 
     const htmlToCopy = `
-      <div style="font-family: '${fontName}', Arial, sans-serif; font-size: 12pt; line-height: 1.15; margin: 0; padding: 0;">
+      <div style="font-family: '${fontName}', Arial, sans-serif; font-size: 12pt; line-height: 1.15; margin: 0; padding: 0; text-align: justify; text-justify: inter-word;">
         ${paragraphsHtml}
       </div>
     `;
@@ -346,7 +346,7 @@
         'text/plain': blobText
       });
       await navigator.clipboard.write([clipboardItem]);
-      showToast(`Copied text for Word! (${fontName} + Arial, 12pt)`, '✨');
+      showToast(`Copied text for Word! (${fontName} + Arial, 12pt, Justified)`, '✨');
     } catch (e) {
       copyOutput();
       showToast('Copied text (Paste directly in Word)', 'ℹ️');
@@ -395,7 +395,7 @@
     a.download = `letter-${targetFont}-${Date.now()}.docx`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Downloaded .DOCX (12pt, No space after) with ${targetFont}!`, '📥');
+    showToast(`Downloaded .DOCX (12pt, Justified) with ${targetFont}!`, '📥');
   }
 
   // Export to Word Document (.DOC fallback)
@@ -410,7 +410,7 @@
     const sourceHtml = lastRichHtml || escapeHtml(text);
     const lines = sourceHtml.split(/\r?\n|<br\s*\/?>/i);
     const paragraphsHtml = lines.map(line => {
-      return `<p class="MsoNormal" style="margin: 0pt; margin-top: 0pt; margin-bottom: 0pt; line-height: 1.15; font-size: 12pt;">${line || '&nbsp;'}</p>`;
+      return `<p class="MsoNormal" style="margin: 0pt; margin-top: 0pt; margin-bottom: 0pt; line-height: 1.15; font-size: 12pt; text-align: justify; text-justify: inter-word;">${line || '&nbsp;'}</p>`;
     }).join('\n');
 
     let headerHtml = '';
@@ -451,6 +451,8 @@
           color: #0f172a;
           margin: 0;
           padding: 0;
+          text-align: justify;
+          text-justify: inter-word;
         }
         p, div, li {
           margin: 0pt;
@@ -463,6 +465,8 @@
           mso-para-margin-bottom: 0pt;
           mso-para-margin-left: 0pt;
           mso-para-margin-right: 0pt;
+          text-align: justify;
+          text-justify: inter-word;
         }
         p.MsoNormal, li.MsoNormal, div.MsoNormal {
           mso-style-parent: "";
@@ -476,6 +480,8 @@
           font-size: 12.0pt;
           font-family: "${fontName}", Arial, sans-serif;
           line-height: 1.15;
+          text-align: justify;
+          text-justify: inter-word;
         }
         .en-text { font-family: Arial, Helvetica, sans-serif !important; font-size: 12pt; font-weight: normal; }
         .si-text { font-family: '${fontName}', sans-serif; font-size: 12pt; }
@@ -498,7 +504,7 @@
     a.download = `letter-${fontName}-${Date.now()}.doc`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Downloaded Word (.DOC, 12pt, No space after) with ${fontName}!`);
+    showToast(`Downloaded Word (.DOC, 12pt, Justified) with ${fontName}!`);
   }
 
   // Print Document (Direct A4 Print Layout)
@@ -506,7 +512,7 @@
     const printableElement = isLetterStudio ? document.getElementById('printableA4Page') : null;
     const fontName = getSelectedFont(isLetterStudio);
     const bodyContent = isLetterStudio && printableElement ? printableElement.innerHTML : `
-      <div style="white-space: pre-wrap; font-family: '${fontName}', sans-serif; font-size: 13pt; line-height: 1.8;">
+      <div style="white-space: pre-wrap; font-family: '${fontName}', sans-serif; font-size: 12pt; line-height: 1.6; text-align: justify; text-justify: inter-word;">
         ${lastRichHtml ? lastRichHtml.replace(/\n/g, '<br>') : escapeHtml(outputText.value)}
       </div>
     `;
@@ -518,12 +524,12 @@
           <title>Formal Letter Print</title>
           <style>
             @page { size: A4; margin: 1.5cm; }
-            body { font-family: '${fontName}', sans-serif; padding: 0; margin: 0; background: #fff; color: #000; }
+            body { font-family: '${fontName}', sans-serif; padding: 0; margin: 0; background: #fff; color: #000; text-align: justify; text-justify: inter-word; }
             .en-text { font-family: Arial, Helvetica, sans-serif !important; font-weight: normal; }
             .letter-header-banner { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 25px; }
             .letter-logo-title { font-family: Arial, sans-serif; font-size: 16pt; font-weight: bold; }
             .letter-logo-subtitle { font-family: Arial, sans-serif; font-size: 9pt; color: #555; }
-            .letter-body-content { font-size: 13pt; line-height: 1.7; font-family: '${fontName}', sans-serif; }
+            .letter-body-content { font-size: 12pt; line-height: 1.6; font-family: '${fontName}', sans-serif; text-align: justify; text-justify: inter-word; }
             .letter-footer-banner { border-top: 2px solid #999; margin-top: 40px; padding-top: 10px; font-family: Arial, sans-serif; font-size: 9pt; display: flex; justify-content: space-between; }
           </style>
         </head>

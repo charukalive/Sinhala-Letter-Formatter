@@ -163,6 +163,7 @@
     </w:rPrDefault>
     <w:pPrDefault>
       <w:pPr>
+        <w:jc w:val="both"/>
         <w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/>
       </w:pPr>
     </w:pPrDefault>
@@ -171,6 +172,7 @@
     <w:name w:val="Normal"/>
     <w:qFormat/>
     <w:pPr>
+      <w:jc w:val="both"/>
       <w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/>
     </w:pPr>
     <w:rPr>
@@ -208,13 +210,13 @@
     const latinTokenRegex = /([A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*(?:\s+[-–—]\s+[A-Za-z0-9/&._-]+|\s+[A-Za-z0-9/&._-]*[A-Za-z][A-Za-z0-9/&._-]*)*|[*•▪●○■◆◇►▸@#$%^&+=<>~_|\\\[\]{}]+)/g;
 
     for (const line of lines) {
-      // Space after paragraph removed: w:before="0" w:after="0"
+      // Space after paragraph removed: w:before="0" w:after="0", Justified: w:jc w:val="both"
       if (!line.trim()) {
-        bodyXml += '<w:p><w:pPr><w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/></w:pPr></w:p>';
+        bodyXml += '<w:p><w:pPr><w:jc w:val="both"/><w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/></w:pPr></w:p>';
         continue;
       }
 
-      bodyXml += '<w:p><w:pPr><w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/></w:pPr>';
+      bodyXml += '<w:p><w:pPr><w:jc w:val="both"/><w:spacing w:line="240" w:lineRule="auto" w:before="0" w:after="0"/></w:pPr>';
 
       if (preserveEnglish) {
         let lastIdx = 0;

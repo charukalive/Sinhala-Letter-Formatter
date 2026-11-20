@@ -557,6 +557,8 @@ textarea.editor-input::placeholder {
   word-break: break-word;
   color: var(--text-primary);
   overflow-x: auto;
+  text-align: justify;
+  text-justify: inter-word;
 }
 
 /* =========================================
@@ -660,6 +662,8 @@ textarea.editor-input::placeholder {
   gap: 1.25rem;
   color: #0f172a;
   word-break: break-word;
+  text-align: justify;
+  text-justify: inter-word;
 }
 
 /* Official Letter Footer Banner */
